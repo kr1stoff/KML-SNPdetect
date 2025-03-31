@@ -9,8 +9,8 @@ OUTDIR={{tag_outdir}}
 
 THREADS=16
 REFERENCE="/data/mengxf/Database/genome/hg19/hg19.fa"
-BED="/data/mengxf/Project/KML250324_drSNP_iGT/work/250324/A175loci-hg19.bed"
-RSID_ANNO="/data/mengxf/Project/KML250324_drSNP_iGT/work/250324/A175loci-hg19.freq-anno.tsv"
+BED="/data/mengxf/Project/KML250324_drSNP_iGT/work/250324/target/A175loci-hg19.bed"
+RSID_ANNO="/data/mengxf/Project/KML250324_drSNP_iGT/work/250324/target/A175loci-hg19.freq-anno_with_ref_alt.tsv"
 
 # * 进入Conda环境
 source /home/mengxf/miniforge3/bin/activate basic
@@ -46,13 +46,6 @@ gatk AddOrReplaceReadGroups \
     I=$OUTDIR/align/$SAMPLE_NAME/$SAMPLE_NAME.aligned.bam \
     O=$OUTDIR/align/$SAMPLE_NAME/$SAMPLE_NAME.aligned.addrg.bam \
     RGID=$SAMPLE_NAME RGLB=$SAMPLE_NAME RGPL=ILLUMINA RGPU=unit1 RGSM=$SAMPLE_NAME
-# (靶向测序跳过这步) MarkDuplicates
-# gatk MarkDuplicates \
-#     --INPUT $OUTDIR/align/$SAMPLE_NAME/$SAMPLE_NAME.aligned.addrg.bam \
-#     --OUTPUT $OUTDIR/align/$SAMPLE_NAME/$SAMPLE_NAME.aligned.duplicate_marked.unsorted.bam \
-#     --METRICS_FILE $OUTDIR/align/$SAMPLE_NAME/$SAMPLE_NAME.aligned.duplicate_marked.metrics \
-#     --VALIDATION_STRINGENCY SILENT --OPTICAL_DUPLICATE_PIXEL_DISTANCE 2500 \
-#     --ASSUME_SORT_ORDER "queryname" --CREATE_MD5_FILE true --REMOVE_DUPLICATES false
 # SortAndFixTags
 gatk SortSam \
     --INPUT $OUTDIR/align/$SAMPLE_NAME/$SAMPLE_NAME.aligned.addrg.bam \
@@ -85,24 +78,19 @@ gatk ApplyBQSR \
 
 # 调用变异
 mkdir -p $OUTDIR/vcf/$SAMPLE_NAME
-# lofreq
-lofreq call-parallel --pp-threads $THREADS --force-overwrite \
-    --no-default-filter --verbose -d 1000000 \
-    -f ${REFERENCE} -l $BED \
-    -o $OUTDIR/vcf/$SAMPLE_NAME/$SAMPLE_NAME.lofreq.vcf \
-    $OUTDIR/align/$SAMPLE_NAME/$SAMPLE_NAME.aligned.recalibrated.bam
-
-# 靶区域统计
-samtools depth -b ${BED} \
+# freebayes 敏感性高，深度与IGV一致. 不报告indel, mnp, complex位点
+freebayes --throw-away-indel-obs --throw-away-mnps-obs --throw-away-complex-obs \
+    --use-duplicate-reads --report-monomorphic \
+    --min-alternate-fraction 0.0001 --min-alternate-count 3 \
+    -t $BED -f ${REFERENCE} \
     $OUTDIR/align/$SAMPLE_NAME/$SAMPLE_NAME.aligned.recalibrated.bam \
-    >$OUTDIR/align/$SAMPLE_NAME/$SAMPLE_NAME.aligned.recalibrated.bam.depth
+    >$OUTDIR/vcf/$SAMPLE_NAME/$SAMPLE_NAME.freebayes.vcf
 
 # SNP注释
 # 1. chr:start - rs_id 对应表, 注释上rs号
 # 2. vcf
 # 3. depth 深度统计文件, 阴性时补充深度
-python /data/mengxf/Project/KML250324_drSNP_iGT/work/250324/jupyter/snp_anno.py \
-    A175loci-hg19.freq-anno.tsv \
-    $OUTDIR/align/$SAMPLE_NAME/$SAMPLE_NAME.aligned.recalibrated.bam.depth \
-    $OUTDIR/vcf/$SAMPLE_NAME/$SAMPLE_NAME.lofreq.vcf \
+python /data/mengxf/Project/KML250324_drSNP_iGT/work/250324/jupyter/scripts/freebayes_snp_anno.py \
+    ${RSID_ANNO} \
+    $OUTDIR/vcf/$SAMPLE_NAME/$SAMPLE_NAME.freebayes.vcf \
     $OUTDIR/vcf/$SAMPLE_NAME/$SAMPLE_NAME.snp_anno.tsv
