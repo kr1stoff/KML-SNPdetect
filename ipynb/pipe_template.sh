@@ -8,7 +8,7 @@ FASTQ2={{tag_fastq2}}
 OUTDIR={{tag_outdir}}
 
 THREADS=16
-REFERENCE="/data/mengxf/Database/genome/hg19/hg19.fa"
+REFERENCE="/data/mengxf/Database/reference/hg19/hg19.fa"
 BED="/data/mengxf/Project/KML250324_drSNP_iGT/work/250324/target/A175loci-hg19.bed"
 RSID_ANNO="/data/mengxf/Project/KML250324_drSNP_iGT/work/250324/target/A175loci-hg19.freq-anno_with_ref_alt.tsv"
 

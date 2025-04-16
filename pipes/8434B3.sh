@@ -8,7 +8,7 @@ FASTQ2=/data/rawdata/BGI/iGT_drSNP_250324/20250321-T7S00934/T7S00934-RDMT02-QN68
 OUTDIR=/data/mengxf/Project/KML250324_drSNP_iGT/work/250324/result
 
 THREADS=16
-REFERENCE="/data/mengxf/Database/genome/hg19/hg19.fa"
+REFERENCE="/data/mengxf/Database/reference/hg19/hg19.fa"
 BED="/data/mengxf/Project/KML250324_drSNP_iGT/work/250324/target/A175loci-hg19.bed"
 RSID_ANNO="/data/mengxf/Project/KML250324_drSNP_iGT/work/250324/target/A175loci-hg19.freq-anno_with_ref_alt.tsv"
 
